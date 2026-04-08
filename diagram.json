@@ -1,34 +1,57 @@
 {
   "version": 1,
-  "author": "Uri Shaked",
+  "author": "David Lobo Martínez",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-resistor", "id": "r1", "top": 90.3, "left": -73.17, "attrs": {} },
-    { "type": "wokwi-resistor", "id": "r2", "top": 101.63, "left": -63.17, "attrs": {} },
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 4.7, "left": -43.4, "attrs": {} },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -28.5,
+      "left": -111,
+      "attrs": { "temperature": "21.9", "humidity": "34" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 119.15,
+      "left": 67.2,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 138.35,
+      "left": 67.2,
+      "attrs": { "value": "330" }
+    },
     {
       "type": "wokwi-led",
       "id": "led1",
-      "top": 50.3,
-      "left": -106.5,
-      "attrs": { "color": "blue" }
+      "top": 63.6,
+      "left": 129,
+      "attrs": { "color": "green", "flip": "1" }
     },
     {
       "type": "wokwi-led",
       "id": "led2",
-      "top": 68.96,
-      "left": -127.84,
-      "attrs": { "color": "green" }
+      "top": 102,
+      "left": 129,
+      "attrs": { "color": "yellow", "flip": "1" }
     }
   ],
   "connections": [
     [ "esp:TX0", "$serialMonitor:RX", "", [] ],
     [ "esp:RX0", "$serialMonitor:TX", "", [] ],
-    [ "r1:1", "led1:A", "green", [ "v0.07", "h-10" ] ],
-    [ "r2:1", "led2:A", "green", [ "v0" ] ],
-    [ "esp:GND.2", "led2:C", "black", [ "h0" ] ],
-    [ "esp:GND.2", "led1:C", "black", [ "h0" ] ],
-    [ "esp:D26", "r1:2", "green", [ "h0" ] ],
-    [ "r2:2", "esp:D27", "green", [ "v0" ] ]
-  ]
+    [ "dht1:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "esp:VIN", "dht1:VCC", "red", [ "h0" ] ],
+    [ "esp:D13", "dht1:SDA", "white", [ "h0" ] ],
+    [ "esp:D4", "r1:1", "green", [ "h0" ] ],
+    [ "esp:D15", "r2:1", "green", [ "h0" ] ],
+    [ "r2:2", "led2:A", "gold", [ "v0" ] ],
+    [ "r1:2", "led1:A", "green", [ "v0" ] ],
+    [ "esp:GND.1", "led2:C", "black", [ "h0" ] ],
+    [ "led1:C", "led2:C", "black", [ "v0", "h9.2", "v38.4" ] ]
+  ],
+  "dependencies": {}
 }
