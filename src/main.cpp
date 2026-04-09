@@ -35,36 +35,57 @@
   #include <ESPAsyncWebServer.h>
 #endif
 #include <ESPDash.h>
+#include <DHTesp.h>
+#include <Ticker.h>
 
-
-/* Your WiFi Credentials */
+// Credenciales WiFi
 const char* ssid = "Wokwi-GUEST"; // SSID
 const char* password = ""; // Password
 const int wifi_channel = 6; // para wokwi
 
-/* Start Webserver */
-AsyncWebServer server(80);
+// Pines
+const int dhtPin = 13;  // DHT-22
+const int led1Pin = 4;  // LED verde
+const int led2Pin = 15; // LED amarillo
 
-/* Attach ESP-DASH to AsyncWebServer */
-ESPDash dashboard(server); 
+// Prototipos
+void updateSensors ();
 
-/* 
-  Button Card
-  Format - (Dashboard Instance, Card Type, Card Name)
-*/
-dash::ToggleButtonCard button(dashboard, "Test Button");
+// Instancio objetos
+DHTesp dht;
+Ticker periodicTicker (updateSensors, 5000); // Actualizar sensores cada 5 segundos
+AsyncWebServer server (80);
 
-/* 
-  Slider Card
-  Format - (Dashboard Instance, Card Type, Card Name, Card Symbol(optional), int min, int max)
-*/
-dash::SliderCard slider(dashboard, "Test Slider", 0, 255);
+// Attachar ESP-DASH al AsyncWebServer */
+ESPDash dashboard (server); 
 
+// Tarjetas para sensores (1 decimal de precision)
+dash::TemperatureCard <float, 1> tempCard (dashboard, "Temperatura", "°C");
+dash::HumidityCard <float, 1> humCard (dashboard, "Humedad", "%");
+
+// Tarjetas tipo pushbutton para los LEDs
+dash::ToggleButtonCard led1Card(dashboard, "LED verde");
+dash::ToggleButtonCard led2Card(dashboard, "LED amarillo");
+
+// Fn. para actualizar valores
+void updateSensors() {
+  TempAndHumidity data = dht.getTempAndHumidity ();
+  tempCard.setValue(data.temperature);
+  humCard.setValue (data.humidity);
+  dashboard.sendUpdates ();
+}
 
 void setup() {
   Serial.begin(115200);
 
-  /* Connect WiFi */
+  // Inicializar DHT
+  dht.setup (dhtPin, DHTesp::DHT22);
+
+  // Configurar LEDs como salidas
+  pinMode (led1Pin, OUTPUT);
+  pinMode (led2Pin, OUTPUT);
+
+  // Conectar WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password, wifi_channel);
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -74,28 +95,41 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  /* Attach Button Callback */
-  button.onChange([](bool state){
+  // Inicializo tarjetas del dash
+  tempCard.setUnit("°C");
+  humCard.setValue(0.0f);
+  humCard.setUnit("%");
+
+  // Callbacks para los leds
+  led1Card.onChange ([] (bool state) {
     /* Print our new button value received from dashboard */
-    Serial.println(String("Button Triggered: ")+(state?"true":"false"));
-    /* Make sure we update our button's value and send update to dashboard */
-    button.setValue(state);
+    Serial.println(String("Led verde: ")+(state?"true":"false"));
+    /* actualizar el estado del led */
+    digitalWrite (led1Pin, state);
+    // actualizar valores en el dash
+    led1Card.setValue(state);
     dashboard.sendUpdates();
   });
 
-  /* Attach Slider Callback */
-  slider.onChange([](int value){
-    /* Print our new slider value received from dashboard */
-    Serial.println("Slider Triggered: "+String(value));
-    /* Make sure we update our slider's value and send update to dashboard */
-    slider.setValue(value);
+  led2Card.onChange([](bool state){
+    /* Print our new button value received from dashboard */
+    Serial.println(String("Led amarillo: ")+(state?"true":"false"));
+    /* actualizar el led*/
+    digitalWrite (led2Pin, state);
+    // actualizar valores en el dash
+    led2Card.setValue(state);
     dashboard.sendUpdates();
   });
 
-  /* Start AsyncWebServer */
+  // Arrancar web server
   server.begin();
+
+  // Arrancar ticker
+  periodicTicker.start ();
 }
 
 void loop() {
-  /* Nothing so far */
+  // Actualizacion del ticker
+  periodicTicker.update ();
+  delay (100);
 }
